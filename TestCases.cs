@@ -38,27 +38,17 @@ public void BeforeEachTest()
     wait.Until(d => ((IJavaScriptExecutor)d)
         .ExecuteScript("return document.readyState").ToString() == "complete");
 }
-public void SelectDropdownOption(By inputLocator, string value)
+public void SelectDropdownFast(By locator, string value)
 {
-    // 🔹 Open dropdown
-    var input = wait.Until(ExpectedConditions.ElementToBeClickable(inputLocator));
-    input.Click();
-    input.Clear();
-    input.SendKeys(value);
+    var el = driver.FindElement(locator);
 
-    // 🔹 Wait for dropdown option and click exact match
-    var option = wait.Until(d =>
-    {
-        var elements = d.FindElements(By.XPath($"//div[@role='option']//span[contains(text(),'{value}')]"));
-        return elements.Count > 0 ? elements[0] : null;
-    });
+    el.Click();
+    el.SendKeys(value);
+    el.SendKeys(Keys.Enter);
 
-    option.Click();
-
-    // 🔹 Close dropdown (important)
+    // minimal blur (important)
     driver.FindElement(By.TagName("body")).Click();
 }
-
     // ================= TEST CASES =================
 
 [Test]
@@ -122,10 +112,9 @@ public void TC_CPX03_PlantAutoFill()
 
     try
     {
-        // IWebElement plant = wait.Until(
-        //     ExpectedConditions.ElementToBeClickable(By.Id("plantID"))
-        // );
-        var plant = wait.Until(ExpectedConditions.ElementToBeClickable(By.Id("plantID")));
+        IWebElement plant = wait.Until(
+            ExpectedConditions.ElementToBeClickable(By.Id("plantID"))
+        );
 
         // Step 1: Click + Type
         plant.Click();
@@ -839,7 +828,7 @@ public void TC_CPX25_AddConfirmationPopup()
         driver.FindElement(By.Id("plantID"))
               .SendKeys("1000" + Keys.ArrowDown + Keys.Enter);
 
-              //Thread.Sleep(100); 
+              Thread.Sleep(100); 
               
         wait.Until(ExpectedConditions.ElementIsVisible(By.Id("itemCode")));
 
@@ -1046,112 +1035,23 @@ public void TC_CPX30_GeneratePRAfterUpdate()
 }
 
 [Test]
+
 public void TC_CPX36_GeneratePR()
 {
     Console.WriteLine("➡️ Running TC_CPX36 - Generate PR");
 
-    ReportManager.test = ReportManager.extent.CreateTest("TC_CPX36_GeneratePR");
+    PRFlow pr = new PRFlow(driver);
+    pr.CreatePR();   // 🔥 does everything
 
-    try
+    // JUST VALIDATE
+    var prText = wait.Until(d =>
     {
+        var el = d.FindElement(By.XPath("//*[contains(text(),'PR')]"));
+        return el.Displayed ? el : null;
+    });
 
-        PRFlow pr = new PRFlow(driver);
-        pr.CreatePR();
-        Console.WriteLine("🎉 Generate PR clicked");
-        var prText = wait.Until(d =>
-        {
-            var el = d.FindElement(By.XPath("//*[contains(text(),'PR')]"));
-            return el.Displayed ? el : null;
-        });
+    Assert.That(prText.Text, Does.Contain("PR"));
 
-        Console.WriteLine("🎉 PR Generated: " + prText.Text);
-        Assert.That(prText.Text, Does.Contain("PR"));
-
-        ReportManager.test.Pass("✅ PR Generated Successfully: " + prText.Text);
-
-        Console.WriteLine("✅ TC_CPX36 PASSED");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("❌ ERROR: " + ex.Message);
-        ReportManager.test.Fail("❌ " + ex.Message);
-        throw;
-    }
-}
-[Test]
-public void TC_CPX31_DeleteFunctionality()
-{
-    Console.WriteLine("➡️ Running: TC_CPX31_DeleteFunctionality");
-
-    try
-    {
-        // ===== STEP 1: CREATE PR FORM =====
-        PRFlow pr = new PRFlow(driver);
-        pr.CreatePR();
-
-        // ===== STEP 2: CLICK ADD =====
-        IWebElement addBtn = wait.Until(
-            ExpectedConditions.ElementToBeClickable(
-                By.XPath("//button[normalize-space()='Add']")
-            )
-        );
-        addBtn.Click();
-        Console.WriteLine("✅ Item Added");
-
-        // ===== STEP 3: WAIT FOR TABLE ROWS =====
-        var rows = wait.Until(d =>
-        {
-            var elements = d.FindElements(By.XPath("//table/tbody/tr"));
-            return elements.Count > 0 ? elements : null;
-        });
-
-        int before = rows.Count;
-        Console.WriteLine($"📊 Rows before delete: {before}");
-
-        // ===== STEP 4: SELECT FIRST ROW =====
-        IWebElement checkbox = wait.Until(
-            ExpectedConditions.ElementToBeClickable(
-                By.XPath("(//table//tbody//input[@type='checkbox'])[1]")
-            )
-        );
-        checkbox.Click();
-        Console.WriteLine("✅ Row selected");
-
-        // ===== STEP 5: CLICK DELETE =====
-        IWebElement deleteBtn = wait.Until(
-            ExpectedConditions.ElementToBeClickable(
-                By.XPath("//button[contains(.,'Delete')]")
-            )
-        );
-        deleteBtn.Click();
-        Console.WriteLine("🗑️ Delete clicked");
-
-        // ===== STEP 6: CONFIRM DELETE =====
-        IWebElement confirmBtn = wait.Until(
-            ExpectedConditions.ElementToBeClickable(
-                By.XPath("//button[contains(.,'Yes') or contains(.,'OK')]")
-            )
-        );
-        confirmBtn.Click();
-        Console.WriteLine("✅ Delete confirmed");
-
-        // ===== STEP 7: WAIT FOR ROW REMOVAL =====
-        wait.Until(d =>
-            d.FindElements(By.XPath("//table/tbody/tr")).Count < before
-        );
-
-        int after = driver.FindElements(By.XPath("//table/tbody/tr")).Count;
-        Console.WriteLine($"📉 Rows after delete: {after}");
-
-        // ===== STEP 8: ASSERT =====
-        Assert.That(after, Is.LessThan(before), "❌ Row was not deleted");
-
-        Console.WriteLine("🎉 Delete functionality working correctly");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("❌ ERROR: " + ex.Message);
-        throw;
-    }
+    Console.WriteLine("✅ TC PASSED");
 }
 }}

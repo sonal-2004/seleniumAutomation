@@ -396,3 +396,4 @@ D:\AutomationProject\obj\Debug\net10.0\refint\AutomationProject.dll
 D:\AutomationProject\obj\Debug\net10.0\AutomationProject.pdb
 D:\AutomationProject\obj\Debug\net10.0\AutomationProject.genruntimeconfig.cache
 D:\AutomationProject\obj\Debug\net10.0\ref\AutomationProject.dll
+D:\AutomationProject\obj\Debug\net10.0\AutomationProject.sourcelink.json
