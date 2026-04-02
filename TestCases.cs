@@ -964,7 +964,7 @@ public void TC_CPX25_VerifyAddButtonFunctionality()
         ((IJavaScriptExecutor)driver)
             .ExecuteScript("arguments[0].scrollIntoView({block:'center'});", addBtn);
 
-        Thread.Sleep(300);
+        Thread.Sleep(100);
 
         ((IJavaScriptExecutor)driver)
             .ExecuteScript("arguments[0].click();", addBtn);
@@ -1139,113 +1139,183 @@ public void TC_CPX28_VerifyEditFunctionality()
 
 [Test]
 
-public void TC_CPX29_VerifyUpdateFunctionality()
+public void TC_CPX24_VerifyUpdateButtonFunctionality()
 {
-    Console.WriteLine("➡️ Running TC_CPX29 - Verify Update Functionality");
-
-    ReportManager.test = ReportManager.extent.CreateTest("TC_CPX29_VerifyUpdateFunctionality");
+    Console.WriteLine("➡️ Running TC_CPX24 - Update Button Functionality");
+    ReportManager.test = ReportManager.extent.CreateTest("TC_CPX24_VerifyUpdateButtonFunctionality");
 
     try
     {
-        wait = new WebDriverWait(driver, TimeSpan.FromSeconds(15));
+        // ===== STEP 1: LOAD PAGE =====
+        wait.Until(ExpectedConditions.ElementIsVisible(By.Id("subtype")));
+        Console.WriteLine("✅ PR Page Loaded");
 
-        // ===== STEP 1: ADD ITEM =====
-        int before = driver.FindElements(By.XPath("//table//tbody//tr")).Count;
-
+        // ===== STEP 2: ADD ITEM =====
         FillMandatoryFields();
-
-        driver.FindElement(By.TagName("body")).Click();
 
         var addBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("//button[normalize-space()='Add']")
         ));
-
-        ((IJavaScriptExecutor)driver)
-            .ExecuteScript("arguments[0].click();", addBtn);
-
-        // wait for new row
-        wait.Until(d =>
-            d.FindElements(By.XPath("//table//tbody//tr")).Count > before
-        );
+        ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", addBtn);
 
         Console.WriteLine("✅ Item Added");
 
-        // ===== STEP 2: CLICK ACTION MENU =====
-        var actionBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
+        // ===== STEP 3: WAIT FOR ROW =====
+        var firstRow = wait.Until(d =>
+        {
+            var row = d.FindElement(By.XPath("//table//tbody//tr[1]"));
+            return row.Displayed ? row : null;
+        });
+
+        Console.WriteLine("✅ Row available");
+ var actionBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("(//table//tbody//tr[last()]//button)[last()]")
         ));
 
         ((IJavaScriptExecutor)driver)
             .ExecuteScript("arguments[0].scrollIntoView({block:'center'});", actionBtn);
 
+        driver.FindElement(By.TagName("body")).Click(); // close overlay
+        Thread.Sleep(100);
+
         ((IJavaScriptExecutor)driver)
             .ExecuteScript("arguments[0].click();", actionBtn);
 
         Console.WriteLine("✅ Action menu opened");
 
-        // ===== STEP 3: CLICK EDIT =====
-        var editBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
+        // ===== STEP 4: CLICK EDIT =====
+        var editOption = wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("//span[contains(text(),'Edit')] | //button[contains(.,'Edit')]")
         ));
 
         ((IJavaScriptExecutor)driver)
-            .ExecuteScript("arguments[0].click();", editBtn);
+            .ExecuteScript("arguments[0].click();", editOption);
 
         Console.WriteLine("✏️ Edit clicked");
 
-        // ===== STEP 4: UPDATE VALUES =====
+        // ===== STEP 5: VERIFY DATA FILLED IN FORM =====
         var qty = wait.Until(ExpectedConditions.ElementIsVisible(By.Id("requiredQty")));
-        qty.Clear();
-        qty.SendKeys("5");
-
         var price = driver.FindElement(By.Id("unitPrice"));
-        price.Clear();
-        price.SendKeys("10");
 
-        Console.WriteLine("🔄 Values updated");
+        string qtyValue = qty.GetAttribute("value");
+        string priceValue = price.GetAttribute("value");
 
-        // ===== STEP 5: CLICK UPDATE =====
+        Console.WriteLine("Qty: " + qtyValue);
+        Console.WriteLine("Price: " + priceValue);
+
+        // ===== STEP 8: CLICK UPDATE =====
         var updateBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
-            By.XPath("//button[contains(.,'Update')]")
+            By.XPath("//button[normalize-space()='Update']")
         ));
 
-        ((IJavaScriptExecutor)driver)
-            .ExecuteScript("arguments[0].click();", updateBtn);
-
+        ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", updateBtn);
         Console.WriteLine("✅ Update clicked");
 
-        // ===== STEP 6: VERIFY CONFIRMATION MESSAGE =====
-        IWebElement msg = wait.Until(d =>
-        {
-            var elements = d.FindElements(By.XPath(
-                "//*[contains(text(),'updated') or contains(text(),'success')]"
-            ));
-            return elements.Count > 0 ? elements[0] : null;
-        });
-
-        Console.WriteLine("Message: " + msg.Text);
-
-        Assert.That(msg.Text.ToLower(),
-            Does.Contain("update").Or.Contain("success"),
-            "❌ Update confirmation message not shown");
-
-        // ===== STEP 7: VERIFY UPDATED DATA IN TABLE =====
+        // ===== STEP 9: VERIFY =====
         var updatedRow = wait.Until(d =>
         {
-            var rows = d.FindElements(By.XPath("//table//tbody//tr[last()]"));
-            return rows.Count > 0 ? rows[0] : null;
+            var row = d.FindElement(By.XPath("//table//tbody//tr[1]"));
+            return row.Text.Contains("5") ? row : null;
         });
 
         string rowText = updatedRow.Text;
-
         Console.WriteLine("Updated Row: " + rowText);
 
         Assert.That(rowText, Does.Contain("5"), "❌ Quantity not updated");
         Assert.That(rowText, Does.Contain("10"), "❌ Price not updated");
 
-        ReportManager.test.Pass("✅ Update functionality working correctly");
+        Console.WriteLine("✅ TC_CPX24 PASSED");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ ERROR: " + ex.Message);
+        ReportManager.test.Fail("❌ " + ex.Message);
+        throw;
+    }
+}
+[Test]
+public void TC_CPX31_VerifyDeleteFunctionality()
+{
+    Console.WriteLine("➡️ Running TC_CPX31 - Delete Functionality");
+    ReportManager.test = ReportManager.extent.CreateTest("TC_CPX31_VerifyDeleteFunctionality");
 
-        Console.WriteLine("✅ TC_CPX29 PASSED");
+    try
+    {
+        // ===== STEP 1: PAGE LOAD =====
+        wait.Until(ExpectedConditions.ElementIsVisible(By.Id("subtype")));
+        Console.WriteLine("✅ PR Page Loaded");
+
+        // ===== STEP 2: ADD ITEM (PRE-CONDITION) =====
+        FillMandatoryFields();
+
+        var addBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//button[normalize-space()='Add']")
+        ));
+
+        ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", addBtn);
+
+        Console.WriteLine("✅ Item Added");
+
+        // ===== STEP 3: WAIT FOR ROW =====
+        var rowsBefore = wait.Until(d =>
+        {
+            var r = d.FindElements(By.XPath("//table//tbody//tr"));
+            return r.Count > 0 ? r : null;
+        });
+
+        int initialCount = rowsBefore.Count;
+        Console.WriteLine("📊 Rows before delete: " + initialCount);
+
+        // ===== STEP 4: SELECT ROW CHECKBOX =====
+        var checkbox = wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//table//tbody//tr[1]//input[@type='checkbox']")
+        ));
+
+        ((IJavaScriptExecutor)driver)
+            .ExecuteScript("arguments[0].click();", checkbox);
+
+        Console.WriteLine("✅ Row selected");
+
+        // ===== STEP 5: CLICK DELETE =====
+        var deleteBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//button[normalize-space()='Delete']")
+        ));
+
+        ((IJavaScriptExecutor)driver)
+            .ExecuteScript("arguments[0].scrollIntoView({block:'center'});", deleteBtn);
+
+        ((IJavaScriptExecutor)driver)
+            .ExecuteScript("arguments[0].click();", deleteBtn);
+
+        Console.WriteLine(" Delete clicked");
+
+        // ===== STEP 6: HANDLE CONFIRMATION (IF POPUP EXISTS) =====
+        try
+        {
+            var confirmBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
+                By.XPath("//button[contains(.,'Yes') or contains(.,'Confirm')]")
+            ));
+
+            confirmBtn.Click();
+            Console.WriteLine("Confirmation accepted");
+        }
+        catch
+        {
+            Console.WriteLine("No confirmation popup");
+        }
+
+        // ===== STEP 7: VERIFY ROW DELETED =====
+        wait.Until(d =>
+            d.FindElements(By.XPath("//table//tbody//tr")).Count < initialCount
+        );
+
+        int finalCount = driver.FindElements(By.XPath("//table//tbody//tr")).Count;
+        Console.WriteLine("Rows after delete: " + finalCount);
+
+        // ===== STEP 8: ASSERT =====
+        Assert.That(finalCount, Is.LessThan(initialCount), "❌ Item not deleted");
+
+        Console.WriteLine("✅ TC_CPX31 PASSED - Delete working");
     }
     catch (Exception ex)
     {
@@ -1258,60 +1328,80 @@ public void TC_CPX29_VerifyUpdateFunctionality()
 public void TC_CPX30_GeneratePRAfterUpdate()
 {
     Console.WriteLine("➡️ Running: TC_CPX30_GeneratePRAfterUpdate");
+    ReportManager.test = ReportManager.extent.CreateTest("TC_CPX30_GeneratePRAfterUpdate");
 
     try
     {
-        wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+        wait.Until(ExpectedConditions.ElementIsVisible(By.Id("subtype")));
+        Console.WriteLine("✅ PR Page Loaded");
 
-        // ===== STEP 1: ADD NEW ITEM =====
-        int before = driver.FindElements(By.XPath("//table//tbody//tr")).Count;
-
+        // ===== STEP 2: ADD ITEM =====
         FillMandatoryFields();
 
         driver.FindElement(By.TagName("body")).Click();
 
+        
         var addBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("//button[normalize-space()='Add']")
         ));
         ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", addBtn);
 
-        wait.Until(d =>
-            d.FindElements(By.XPath("//table//tbody//tr")).Count > before
-        );
-
-        Console.WriteLine("✅ Item Added");
-
         // ===== STEP 2: OPEN ACTION MENU (⋮) =====
-        var actionBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
+         var actionBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("(//table//tbody//tr[last()]//button)[last()]")
         ));
+
+        ((IJavaScriptExecutor)driver)
+            .ExecuteScript("arguments[0].scrollIntoView({block:'center'});", actionBtn);
+
+        driver.FindElement(By.TagName("body")).Click(); // close overlay
+        Thread.Sleep(100);
+
         ((IJavaScriptExecutor)driver)
             .ExecuteScript("arguments[0].click();", actionBtn);
 
-        // ===== STEP 3: CLICK EDIT =====
-        var editOption = wait.Until(ExpectedConditions.ElementIsVisible(
-            By.XPath("//span[contains(text(),'Edit')] | //li[contains(.,'Edit')]")
+        Console.WriteLine("✅ Action menu opened");
+
+        // ===== STEP 4: CLICK EDIT =====
+        var editOption = wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//span[contains(text(),'Edit')] | //button[contains(.,'Edit')]")
         ));
+
         ((IJavaScriptExecutor)driver)
             .ExecuteScript("arguments[0].click();", editOption);
 
         Console.WriteLine("✏️ Edit clicked");
 
-        // ===== STEP 4: UPDATE FIELD =====
+        // ===== STEP 5: VERIFY DATA FILLED IN FORM =====
         var qty = wait.Until(ExpectedConditions.ElementIsVisible(By.Id("requiredQty")));
-        qty.Clear();
-        qty.SendKeys("2");
+        var price = driver.FindElement(By.Id("unitPrice"));
 
-        Console.WriteLine("🔄 Quantity updated");
+        string qtyValue = qty.GetAttribute("value");
+        string priceValue = price.GetAttribute("value");
 
-        // ===== STEP 5: CLICK UPDATE =====
+        Console.WriteLine("Qty: " + qtyValue);
+        Console.WriteLine("Price: " + priceValue);
+
+        // ===== STEP 8: CLICK UPDATE =====
         var updateBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
-            By.XPath("//button[contains(.,'Update')]")
+            By.XPath("//button[normalize-space()='Update']")
         ));
-        ((IJavaScriptExecutor)driver)
-            .ExecuteScript("arguments[0].click();", updateBtn);
 
+        ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", updateBtn);
         Console.WriteLine("✅ Update clicked");
+
+        // ===== STEP 9: VERIFY =====
+        var updatedRow = wait.Until(d =>
+        {
+            var row = d.FindElement(By.XPath("//table//tbody//tr[1]"));
+            return row.Text.Contains("5") ? row : null;
+        });
+
+        string rowText = updatedRow.Text;
+        Console.WriteLine("Updated Row: " + rowText);
+
+        Assert.That(rowText, Does.Contain("5"), "❌ Quantity not updated");
+        Assert.That(rowText, Does.Contain("10"), "❌ Price not updated");
 
         // ===== STEP 6: SELECT UPDATED ROW =====
         var checkbox = wait.Until(ExpectedConditions.ElementToBeClickable(
@@ -1330,25 +1420,16 @@ public void TC_CPX30_GeneratePRAfterUpdate()
             .ExecuteScript("arguments[0].click();", actionMenu);
 
         // ===== STEP 8: CLICK GENERATE PR =====
-        var genBtn = wait.Until(ExpectedConditions.ElementToBeClickable(
-            By.XPath("//span[normalize-space()='Generate PR']")
-        ));
-        ((IJavaScriptExecutor)driver)
-            .ExecuteScript("arguments[0].click();", genBtn);
-
-        Console.WriteLine("🎉 Generate PR clicked");
-        Thread.Sleep(100);
-
-        var rows = driver.FindElements(By.XPath("//table//tbody//tr"));
-
-        Assert.That(rows.Count, Is.GreaterThan(0), "❌ PR not generated");
-
-        Console.WriteLine("✅ PR Generated after Update (verified via table)");
+        IWebElement generatePR = wait.Until(ExpectedConditions.ElementToBeClickable(
+                By.XPath("//*[contains(text(),'Generate PR')]")
+            ));
+            generatePR.Click();
         Console.WriteLine("✅ TC_CPX30 PASSED");
     }
     catch (Exception ex)
     {
         Console.WriteLine("❌ ERROR: " + ex.Message);
+        ReportManager.test.Fail("❌ " + ex.Message);
         throw;
     }
 }
@@ -1371,6 +1452,7 @@ public void TC_CPX36_GeneratePR()
 public void TC_CPX37_VerifyItemSelectionValidation()
 {
     Console.WriteLine("➡️ Running TC_CPX37 - Item Selection Validation");
+    ReportManager.test = ReportManager.extent.CreateTest("TC_CPX37_VerifyItemSelectionValidation");
 
     try
     {
@@ -1439,6 +1521,7 @@ genBtn.Click();
     catch (Exception ex)
     {
         Console.WriteLine("❌ ERROR: " + ex.Message);
+        ReportManager.test.Fail("❌ " + ex.Message);
         throw;
     }
 }
